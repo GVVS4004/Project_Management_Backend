@@ -37,7 +37,7 @@ public class ProjectService implements IProjectService{
     private final ProjectMemberRepository projectMemberRepository;
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure database write operation is atomic
      * 2. Keep Hibernate session open during convertToDTO() call
      * 3. Allow access to lazy-loaded 'owner' relationship when converting to DTO
@@ -59,7 +59,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep Hibernate session open while accessing lazy-loaded relationships
      * 2. Prevent LazyInitializationException when convertToDTO() accesses project.getOwner()
      * 3. readOnly=true is an optimization - tells database this is a read-only operation
@@ -73,7 +73,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep Hibernate session open during the entire operation
      * 2. Prevent LazyInitializationException when map() calls convertToDTO()
      * 3. Each project's lazy-loaded 'owner' is accessed during DTO conversion
@@ -86,7 +86,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic database update operation
      * 2. Keep session open for accessing lazy-loaded 'owner' in checkOwnershipOrAdmin()
      * 3. Allow convertToDTO() to access owner fields after save()
@@ -107,7 +107,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic delete operation
      * 2. Keep session open for accessing lazy-loaded 'owner' in checkOwnershipOrAdmin()
      * 3. Rollback if permission check or delete fails
@@ -123,7 +123,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic status update operation
      * 2. Keep session open for checkOwnershipOrAdmin() to access lazy owner
      * 3. Allow convertToDTO() to access owner after save()
@@ -141,7 +141,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep session open during search and DTO conversion
      * 2. Allow map() operation to access lazy-loaded owner for each project
      * 3. Prevent LazyInitializationException during pagination
@@ -153,7 +153,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep session open during status filtering and DTO conversion
      * 2. Allow map() to access lazy-loaded owner for filtered projects
      * 3. Handle pagination without LazyInitializationException
@@ -165,7 +165,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep session open while fetching user's owned projects
      * 2. Allow map() to access lazy owner during DTO conversion
      * 3. Ensure pagination works without session closure issues
@@ -182,7 +182,6 @@ public class ProjectService implements IProjectService{
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if(auth == null || !auth.isAuthenticated()){
-
             throw new UnauthorizedException("User not authenticated");
         }
         CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
@@ -190,7 +189,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic member addition operation
      * 2. Keep session open for accessing lazy project owner in checkOwnerOrAdminPermission()
      * 3. Allow convertToMemberDTO() to access lazy-loaded user and project fields
@@ -228,7 +227,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic member removal operation
      * 2. Keep session open for accessing lazy project owner (step 3)
      * 3. Keep session open during permission check in checkOwnerOrAdminPermission()
@@ -258,7 +257,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional is needed here to:
+     * {@code @Transactional} is needed here to:
      * 1. Ensure atomic role update operation
      * 2. Keep session open for accessing lazy project owner (step 3)
      * 3. Keep session open during checkOwnerOrAdminPermission()
@@ -293,7 +292,7 @@ public class ProjectService implements IProjectService{
     }
 
     /**
-     * @Transactional(readOnly = true) is needed here to:
+     * {@code @Transactional(readOnly = true)} is needed here to:
      * 1. Keep session open during entire member list fetch and conversion
      * 2. Allow checkProjectMembership() to access lazy project owner
      * 3. Allow stream().map() to access lazy user and project fields in each ProjectMember

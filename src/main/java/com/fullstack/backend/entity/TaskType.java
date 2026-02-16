@@ -3,7 +3,7 @@ package com.fullstack.backend.entity;
 public enum TaskType {
     STORY,
     BUG,
-    STORY_DEFECT,
+    DEFECT,
     EPIC,
     TASK,
     SUBTASK
