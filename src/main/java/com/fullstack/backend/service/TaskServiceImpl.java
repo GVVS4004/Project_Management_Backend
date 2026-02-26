@@ -7,6 +7,7 @@ import com.fullstack.backend.dto.response.UserSummaryDTO;
 import com.fullstack.backend.entity.*;
 import com.fullstack.backend.exception.BadRequestException;
 import com.fullstack.backend.exception.ResourceNotFoundException;
+import com.fullstack.backend.exception.ForbiddenException;
 import com.fullstack.backend.exception.UnauthorizedException;
 import com.fullstack.backend.repository.ProjectMemberRepository;
 import com.fullstack.backend.repository.ProjectRepository;
@@ -164,10 +165,16 @@ public class TaskServiceImpl  implements TaskService{
     }
 
     private void checkProjectMembership(Long projectId, User user) {
-        boolean isMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, user.getId());
+        // Project owner always has access
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+        if (project.getOwner().getId().equals(user.getId())) {
+            return;
+        }
 
+        boolean isMember = projectMemberRepository.existsByProjectIdAndUserId(projectId, user.getId());
         if (!isMember) {
-            throw new UnauthorizedException("You are not a member of this project");
+            throw new ForbiddenException("You are not a member of this project");
         }
     }
 
@@ -176,7 +183,7 @@ public class TaskServiceImpl  implements TaskService{
 
         Project project = projectRepository.findById(projectId).orElseThrow(()-> new ResourceNotFoundException("Project not found with id:" + projectId));
         if(!projectMember.getRole().equals(ProjectRole.ADMIN) && !project.getOwner().equals(user)){
-            throw new UnauthorizedException("User is not an Owner or Admin of this project");
+            throw new ForbiddenException("User is not an Owner or Admin of this project");
         }
     }
 

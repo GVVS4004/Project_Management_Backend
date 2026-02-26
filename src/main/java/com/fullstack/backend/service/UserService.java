@@ -9,6 +9,7 @@ import com.fullstack.backend.entity.User;
 import com.fullstack.backend.exception.BadRequestException;
 import com.fullstack.backend.exception.DuplicateResourceException;
 import com.fullstack.backend.exception.ResourceNotFoundException;
+import com.fullstack.backend.exception.ForbiddenException;
 import com.fullstack.backend.exception.UnauthorizedException;
 import com.fullstack.backend.repository.UserRepository;
 import com.fullstack.backend.security.CustomUserDetails;
@@ -117,7 +118,7 @@ public class UserService {
         User currentUser = userRepository.findByEmail(currentUserEmail).orElseThrow(()-> new UnauthorizedException("User not authenticated"));
 
         if(!targetUserId.equals(currentUser.getId())){
-            throw new UnauthorizedException("You dont have permission to access this user's data");
+            throw new ForbiddenException("You dont have permission to access this user's data");
         }
     }
 
