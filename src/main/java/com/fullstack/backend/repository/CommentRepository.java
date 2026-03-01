@@ -1,16 +1,26 @@
 package com.fullstack.backend.repository;
 
 import com.fullstack.backend.entity.Comment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+
+    String COMMENT_GRAPH = "Comment.withRelationships";
+
+    @EntityGraph(value = COMMENT_GRAPH)
+    Optional<Comment> findById(Long id);
+
     // Get all comments for a task (chronological)
     List<Comment> findByTaskIdOrderByCreatedAtAsc(Long taskId);
 
     // Get top-level comments only (depth = 0)
+    @EntityGraph(value = COMMENT_GRAPH)
     List<Comment> findByTaskIdAndDepthOrderByCreatedAtAsc(Long taskId, Integer depth);
 
     // Get replies to a specific comment (chronological)

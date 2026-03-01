@@ -4,7 +4,6 @@ package com.fullstack.backend.service;
 import com.fullstack.backend.dto.request.CreateCommentDTO;
 import com.fullstack.backend.dto.request.UpdateCommentDTO;
 import com.fullstack.backend.dto.response.CommentResponseDTO;
-import com.fullstack.backend.dto.response.UserSummaryDTO;
 import com.fullstack.backend.entity.Comment;
 import com.fullstack.backend.entity.Role;
 import com.fullstack.backend.entity.Task;
@@ -12,13 +11,11 @@ import com.fullstack.backend.entity.User;
 import com.fullstack.backend.exception.BadRequestException;
 import com.fullstack.backend.exception.ResourceNotFoundException;
 import com.fullstack.backend.exception.ForbiddenException;
-import com.fullstack.backend.exception.UnauthorizedException;
 import com.fullstack.backend.repository.CommentRepository;
 import com.fullstack.backend.repository.TaskRepository;
-import com.fullstack.backend.security.CustomUserDetails;
+import com.fullstack.backend.util.SecurityUtils;
+import com.fullstack.backend.util.UserMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,37 +29,10 @@ public class CommentServiceImpl implements CommentService{
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
 
-    private User getCurrentUser(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if(auth== null || !auth.isAuthenticated()){
-            throw new UnauthorizedException("User not authenticated");
-        }
-        Object principal = auth.getPrincipal();
-        if (!(principal instanceof CustomUserDetails)) {
-            throw new UnauthorizedException("Invalid authentication principal");
-        }
-        return ((CustomUserDetails) principal).getUser();
-    }
-
-    private UserSummaryDTO convertUserToSummary(User user){
-        if(user == null){
-            return null;
-        }
-        UserSummaryDTO dto = new UserSummaryDTO();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUserName());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
-        dto.setEmail(user.getEmail());
-        dto.setProfileImageUrl(user.getProfileImageUrl());
-
-        return dto;
-    }
-
     private CommentResponseDTO convertToCommentResponseDTO(Comment comment){
         CommentResponseDTO dto = new CommentResponseDTO();
         dto.setContent(comment.getIsDeleted() ? "[Comment deleted]" : comment.getContent());
-        dto.setAuthor(convertUserToSummary(comment.getAuthor()));
+        dto.setAuthor(UserMapper.toSummaryDTO(comment.getAuthor()));
         dto.setParentCommentId(comment.getParentComment() != null ? comment.getParentComment().getId() : null);
         dto.setReplies(comment.getReplies().stream().map(this::convertToCommentResponseDTO).toList());
         dto.setDepth(comment.getDepth());
@@ -78,7 +48,7 @@ public class CommentServiceImpl implements CommentService{
         return dto;
     }
     private void checkCanEditComment(Comment comment){
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         if(!comment.getAuthor().getId().equals(currentUser.getId())){
             throw new ForbiddenException("You are not the author of the comment");
         }
@@ -88,7 +58,7 @@ public class CommentServiceImpl implements CommentService{
     }
 
     private void checkCanDeleteComment(Comment comment){
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         if(currentUser.getRole()!= Role.ADMIN && !comment.getAuthor().getId().equals(currentUser.getId())){
             throw new ForbiddenException("You cannot delete the comment");
         }
@@ -99,7 +69,7 @@ public class CommentServiceImpl implements CommentService{
     @Override
     public CommentResponseDTO createComment(CreateCommentDTO dto, Long taskId){
         Task task = taskRepository.findById(taskId).orElseThrow(()-> new ResourceNotFoundException("Task not found with id: "+taskId));
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         Comment comment = new Comment();
         comment.setContent(dto.getContent());
         comment.setAuthor(currentUser);
@@ -134,7 +104,7 @@ public class CommentServiceImpl implements CommentService{
         checkCanDeleteComment(comment);
         comment.setIsDeleted(true);
         comment.setDeletedAt(LocalDateTime.now());
-        comment.setDeletedBy(getCurrentUser().getId());
+        comment.setDeletedBy(SecurityUtils.getCurrentUser().getId());
         commentRepository.save(comment);
     }
 

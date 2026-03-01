@@ -11,6 +11,14 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "comments")
+@NamedEntityGraph(
+        name = "Comment.withRelationships",
+        attributeNodes = {
+                @NamedAttributeNode("author"),
+                @NamedAttributeNode("parentComment"),
+                @NamedAttributeNode("task")
+        }
+)
 public class Comment {
 
     @Id

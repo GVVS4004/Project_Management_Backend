@@ -3,22 +3,19 @@ package com.fullstack.backend.service;
 import com.fullstack.backend.dto.request.CreateTaskDTO;
 import com.fullstack.backend.dto.request.UpdateTaskDTO;
 import com.fullstack.backend.dto.response.TaskResponseDTO;
-import com.fullstack.backend.dto.response.UserSummaryDTO;
 import com.fullstack.backend.entity.*;
 import com.fullstack.backend.exception.BadRequestException;
 import com.fullstack.backend.exception.ResourceNotFoundException;
 import com.fullstack.backend.exception.ForbiddenException;
-import com.fullstack.backend.exception.UnauthorizedException;
 import com.fullstack.backend.repository.ProjectMemberRepository;
 import com.fullstack.backend.repository.ProjectRepository;
 import com.fullstack.backend.repository.TaskRepository;
 import com.fullstack.backend.repository.UserRepository;
-import com.fullstack.backend.security.CustomUserDetails;
+import com.fullstack.backend.util.SecurityUtils;
+import com.fullstack.backend.util.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,36 +33,6 @@ public class TaskServiceImpl  implements TaskService{
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
 
-
-
-    private User getCurrentUser(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if(auth == null || !auth.isAuthenticated()){
-            throw new UnauthorizedException("User not authenticated");
-        }
-        Object principal = auth.getPrincipal();
-        if (!(principal instanceof CustomUserDetails)) {
-            throw new UnauthorizedException("Invalid authentication principal");
-        }
-        CustomUserDetails user = (CustomUserDetails) principal;
-        return user.getUser();
-    }
-
-    private UserSummaryDTO convertUserToSummary(User user){
-        if(user == null){
-            return null;
-        }
-        UserSummaryDTO dto = new UserSummaryDTO();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUserName());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
-        dto.setEmail(user.getEmail());
-        dto.setProfileImageUrl(user.getProfileImageUrl());
-
-        return dto;
-    }
-
     private TaskResponseDTO convertToDTO(Task task){
         TaskResponseDTO dto = new TaskResponseDTO();
         dto.setId(task.getId());
@@ -82,8 +49,8 @@ public class TaskServiceImpl  implements TaskService{
         dto.setProjectId(task.getProject().getId());
         dto.setProjectName(task.getProject().getName());
 
-        dto.setCreatedBy(convertUserToSummary(task.getCreatedBy()));
-        dto.setAssignedTo(convertUserToSummary(task.getAssignedTo()));
+        dto.setCreatedBy(UserMapper.toSummaryDTO(task.getCreatedBy()));
+        dto.setAssignedTo(UserMapper.toSummaryDTO(task.getAssignedTo()));
 
         // Parent task information (optional - can be null)
         if (task.getParentTask() != null) {
@@ -201,7 +168,7 @@ public class TaskServiceImpl  implements TaskService{
     @Override
     @Transactional
     public TaskResponseDTO createTask(CreateTaskDTO dto) {
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
 
         Project project = projectRepository.findById(dto.getProjectId()).orElseThrow(()-> new ResourceNotFoundException("Project not found with id: " + dto.getProjectId()));
 
@@ -260,7 +227,7 @@ public class TaskServiceImpl  implements TaskService{
     public TaskResponseDTO updateTask(Long id, UpdateTaskDTO dto) {
         Task task = taskRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Task not found with id:" + id));
 
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
 
         checkProjectMembership(task.getProject().getId(),currentUser);
 
@@ -298,7 +265,7 @@ public class TaskServiceImpl  implements TaskService{
     public void deleteTask(Long id) {
         Task task = taskRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Task not found with id:" + id));
 
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
 
        checkDeleteAuthorization(task,currentUser);
 
@@ -316,7 +283,7 @@ public class TaskServiceImpl  implements TaskService{
     public TaskResponseDTO updateTaskStatus(Long id, TaskStatus newStatus) {
         Task task = taskRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Task not found with id:" + id));
         validateStatusTransition(task.getStatus(),newStatus);
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkProjectMembership(task.getProject().getId(),currentUser);
         task.setStatus(newStatus);
         if(newStatus==TaskStatus.DONE){
@@ -346,7 +313,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getMyTasks(Pageable pageable) {
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         Page<Task> tasks = taskRepository.findByAssignedToId(currentUser.getId(),pageable);
         return tasks.map(this::convertToDTO);
     }

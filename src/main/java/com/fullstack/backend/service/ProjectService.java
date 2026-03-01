@@ -6,15 +6,14 @@ import com.fullstack.backend.dto.request.UpdateMemberRoleDTO;
 import com.fullstack.backend.dto.request.UpdateProjectDTO;
 import com.fullstack.backend.dto.response.MemberResponseDTO;
 import com.fullstack.backend.dto.response.ProjectResponseDTO;
-import com.fullstack.backend.dto.response.UserSummaryDTO;
 import com.fullstack.backend.entity.*;
 import com.fullstack.backend.exception.DuplicateResourceException;
 import com.fullstack.backend.exception.ResourceNotFoundException;
-import com.fullstack.backend.exception.UnauthorizedException;
 import com.fullstack.backend.repository.ProjectMemberRepository;
 import com.fullstack.backend.repository.ProjectRepository;
 import com.fullstack.backend.repository.UserRepository;
-import com.fullstack.backend.security.CustomUserDetails;
+import com.fullstack.backend.util.SecurityUtils;
+import com.fullstack.backend.util.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,8 +22,6 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +42,7 @@ public class ProjectService implements IProjectService{
     @Override
     @Transactional
     public ProjectResponseDTO createProject(CreateProjectDTO createProjectDTO) {
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         Project project = new Project();
         project.setName(createProjectDTO.getName());
         project.setDescription(createProjectDTO.getDescription());
@@ -96,7 +93,7 @@ public class ProjectService implements IProjectService{
     @Transactional
     public ProjectResponseDTO updateProject(Long id, UpdateProjectDTO dto) {
         Project project = projectRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Project not found with id: " + id));
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnershipOrAdmin(project,currentUser);
         project.setDescription(dto.getDescription());
         project.setName(dto.getName());
@@ -117,7 +114,7 @@ public class ProjectService implements IProjectService{
     @Transactional
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Project not found with id: " + id));
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnershipOrAdmin(project,currentUser);
         projectRepository.deleteById(id);
     }
@@ -133,7 +130,7 @@ public class ProjectService implements IProjectService{
     @Transactional
     public ProjectResponseDTO updateProjectStatus(Long id, ProjectStatus status) {
         Project project = projectRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Project not found with id: " + id));
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnershipOrAdmin(project,currentUser);
         project.setStatus(status);
         Project savedProject = projectRepository.save(project);
@@ -173,19 +170,9 @@ public class ProjectService implements IProjectService{
     @Override
     @Transactional(readOnly = true)
     public Page<ProjectResponseDTO> getMyProjects(Pageable pageable) {
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         Page<Project> projects = projectRepository.findByOwnerId(currentUser.getId(),pageable);
         return projects.map(this::convertToDTO);
-    }
-
-    private User getCurrentUser(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if(auth == null || !auth.isAuthenticated()){
-            throw new UnauthorizedException("User not authenticated");
-        }
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        return userDetails.getUser();
     }
 
     /**
@@ -211,7 +198,7 @@ public class ProjectService implements IProjectService{
         }
 
         // 4. Permission check: Only owner or admin can add members
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnerOrAdminPermission(project, currentUser);
 
         // 5. Create and save new member
@@ -249,7 +236,7 @@ public class ProjectService implements IProjectService{
         }
 
         // 4. Permission check: Only owner or admin can remove members
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnerOrAdminPermission(project, currentUser);
 
         // 5. Delete the member
@@ -280,7 +267,7 @@ public class ProjectService implements IProjectService{
         }
 
         // 4. Permission check: Only owner or admin can update roles
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkOwnerOrAdminPermission(project, currentUser);
 
         // 5. Update the role
@@ -306,7 +293,7 @@ public class ProjectService implements IProjectService{
 
         // 2. Check if current user has access to view members
         // (Anyone who is owner or member can view the team)
-        User currentUser = getCurrentUser();
+        User currentUser = SecurityUtils.getCurrentUser();
         checkProjectMembership(project, currentUser);
 
         // 3. Get all members and convert to DTOs
@@ -317,16 +304,6 @@ public class ProjectService implements IProjectService{
     }
 
     private ProjectResponseDTO convertToDTO(Project project) {
-        UserSummaryDTO ownerDTO = new UserSummaryDTO(
-                project.getOwner().getId(),
-                project.getOwner().getUserName(),
-                project.getOwner().getFirstName(),
-                project.getOwner().getLastName(),
-                project.getOwner().getEmail(),
-                project.getOwner().getProfileImageUrl()
-        );
-
-        // Create ProjectResponseDTO
         return new ProjectResponseDTO(
                 project.getId(),
                 project.getName(),
@@ -336,7 +313,7 @@ public class ProjectService implements IProjectService{
                 project.getUpdatedAt(),
                 project.getStartDate(),
                 project.getEndDate(),
-                ownerDTO
+                UserMapper.toSummaryDTO(project.getOwner())
         );
     }
     private void checkOwnershipOrAdmin(Project project, User currentUser) {
@@ -393,18 +370,9 @@ public class ProjectService implements IProjectService{
      * Convert ProjectMember entity to MemberResponseDTO
      */
     private MemberResponseDTO convertToMemberDTO(ProjectMember member) {
-        UserSummaryDTO userDTO = new UserSummaryDTO(
-                member.getUser().getId(),
-                member.getUser().getUserName(),
-                member.getUser().getFirstName(),
-                member.getUser().getLastName(),
-                member.getUser().getEmail(),
-                member.getUser().getProfileImageUrl()
-        );
-
         return new MemberResponseDTO(
                 member.getProject().getId(),
-                userDTO,
+                UserMapper.toSummaryDTO(member.getUser()),
                 member.getRole(),
                 member.getJoinedAt()
         );

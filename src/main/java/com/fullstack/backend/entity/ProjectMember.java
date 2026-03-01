@@ -13,6 +13,13 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "project_members")
+@NamedEntityGraph(
+        name = "ProjectMember.withRelationships",
+        attributeNodes = {
+                @NamedAttributeNode("user"),
+                @NamedAttributeNode("project")
+        }
+)
 public class ProjectMember {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

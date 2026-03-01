@@ -16,6 +16,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "projects")
+@NamedEntityGraph(
+        name = "Project.withRelationships",
+        attributeNodes = {
+                @NamedAttributeNode("owner")
+        }
+)
 public class Project {
 
     @Id
