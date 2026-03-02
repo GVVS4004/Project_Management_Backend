@@ -28,6 +28,8 @@ import java.util.List;
 public class CommentServiceImpl implements CommentService{
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
+    private final EditorMediaService editorMediaService;
+    private final NotificationService notificationService;
 
     private CommentResponseDTO convertToCommentResponseDTO(Comment comment){
         CommentResponseDTO dto = new CommentResponseDTO();
@@ -85,6 +87,17 @@ public class CommentServiceImpl implements CommentService{
             comment.setParentComment(parentComment);
         }
         commentRepository.save(comment);
+        editorMediaService.linkMediaToComment(comment.getId(), comment.getContent());
+
+        // Notify task creator about the comment
+        notificationService.notifyCommentOnTask(comment.getId(), taskId);
+
+        // Notify @mentioned users
+        List<String> mentions = extractMentions(comment.getContent());
+        if (!mentions.isEmpty()) {
+            notificationService.notifyMentioned(comment.getId(), taskId, mentions);
+        }
+
         return convertToCommentResponseDTO(comment);
     }
 
@@ -95,6 +108,8 @@ public class CommentServiceImpl implements CommentService{
         comment.setContent(dto.getContent());
         comment.setIsEdited(true);
         commentRepository.save(comment);
+        editorMediaService.linkMediaToComment(comment.getId(), comment.getContent());
+
         return convertToCommentResponseDTO(comment);
     }
 
@@ -128,5 +143,20 @@ public class CommentServiceImpl implements CommentService{
     @Override
     public Long getRepliesCount(Long commentId) {
         return commentRepository.countByParentCommentId(commentId);
+    }
+
+    // ========== HELPERS ==========
+
+    private List<String> extractMentions(String content) {
+        if (content == null || content.isBlank()) {
+            return List.of();
+        }
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@(\\w+)");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+        List<String> mentions = new java.util.ArrayList<>();
+        while (matcher.find()) {
+            mentions.add(matcher.group(1));
+        }
+        return mentions;
     }
 }

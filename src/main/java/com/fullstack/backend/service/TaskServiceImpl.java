@@ -32,6 +32,8 @@ public class TaskServiceImpl  implements TaskService{
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final EditorMediaService editorMediaService;
+    private final NotificationService notificationService;
 
     private TaskResponseDTO convertToDTO(Task task){
         TaskResponseDTO dto = new TaskResponseDTO();
@@ -212,6 +214,12 @@ public class TaskServiceImpl  implements TaskService{
         task.setDueDate(dto.getDueDate());
 
         Task savedTask = taskRepository.save(task);
+        editorMediaService.linkMediaToTask(savedTask.getId(), savedTask.getDescription());
+
+        // Notify assignee if task is assigned on creation
+        if (savedTask.getAssignedTo() != null) {
+            notificationService.notifyTaskAssigned(savedTask.getId(), savedTask.getAssignedTo().getId());
+        }
 
         return convertToDTO(savedTask);
     }
@@ -230,6 +238,8 @@ public class TaskServiceImpl  implements TaskService{
         User currentUser = SecurityUtils.getCurrentUser();
 
         checkProjectMembership(task.getProject().getId(),currentUser);
+
+        Long previousAssigneeId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
 
         if(dto.getAssignedToId() != null){
             User assignedTo = userRepository.findById(dto.getAssignedToId()).orElseThrow(()-> new ResourceNotFoundException("User not found with id: "+ dto.getAssignedToId()));
@@ -257,6 +267,14 @@ public class TaskServiceImpl  implements TaskService{
         }
 
         Task savedTask = taskRepository.save(task);
+        editorMediaService.linkMediaToTask(savedTask.getId(), savedTask.getDescription());
+
+        // Notify new assignee if assignment changed
+        if (savedTask.getAssignedTo() != null
+                && !savedTask.getAssignedTo().getId().equals(previousAssigneeId)) {
+            notificationService.notifyTaskAssigned(savedTask.getId(), savedTask.getAssignedTo().getId());
+        }
+
         return convertToDTO(savedTask);
     }
 
@@ -282,6 +300,7 @@ public class TaskServiceImpl  implements TaskService{
     @Transactional
     public TaskResponseDTO updateTaskStatus(Long id, TaskStatus newStatus) {
         Task task = taskRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Task not found with id:" + id));
+        String oldStatus = task.getStatus().name();
         validateStatusTransition(task.getStatus(),newStatus);
         User currentUser = SecurityUtils.getCurrentUser();
         checkProjectMembership(task.getProject().getId(),currentUser);
@@ -290,6 +309,10 @@ public class TaskServiceImpl  implements TaskService{
             task.setCompletedAt(LocalDateTime.now());
         }
         taskRepository.save(task);
+
+        // Notify assignee and creator about status change
+        notificationService.notifyStatusChanged(task.getId(), oldStatus, newStatus.name());
+
         return convertToDTO(task);
     }
 
