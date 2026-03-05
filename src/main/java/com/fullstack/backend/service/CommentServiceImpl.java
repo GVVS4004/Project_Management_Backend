@@ -151,7 +151,7 @@ public class CommentServiceImpl implements CommentService{
         if (content == null || content.isBlank()) {
             return List.of();
         }
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@(\\w+)");
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("data-id=\"(\\w+)\"");
         java.util.regex.Matcher matcher = pattern.matcher(content);
         List<String> mentions = new java.util.ArrayList<>();
         while (matcher.find()) {

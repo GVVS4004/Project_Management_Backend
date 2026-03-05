@@ -39,7 +39,9 @@ public class EditorMediaServiceImpl implements EditorMediaService{
             "image/jpeg",
             "image/gif",
             "image/webp",
-            "image/svg+xml"
+            "image/svg+xml",
+            "video/mp4",
+            "video/webm"
     );
 
     private String getExtension(String filename) {
@@ -59,7 +61,7 @@ public class EditorMediaServiceImpl implements EditorMediaService{
 
 
         if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
-            throw new InvalidFileException("Only images are allowed (PNG, JPEG, GIF, WebP, SVG)");
+            throw new InvalidFileException("Only images and videos are allowed (PNG, JPEG, GIF, WebP, SVG, MP4, WEBM)");
         }
 
         try {

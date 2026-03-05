@@ -171,7 +171,7 @@ public class ProjectService implements IProjectService{
     @Transactional(readOnly = true)
     public Page<ProjectResponseDTO> getMyProjects(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        Page<Project> projects = projectRepository.findByOwnerId(currentUser.getId(),pageable);
+        Page<Project> projects = projectRepository.findMyProjects(currentUser.getId(),pageable);
         return projects.map(this::convertToDTO);
     }
 
