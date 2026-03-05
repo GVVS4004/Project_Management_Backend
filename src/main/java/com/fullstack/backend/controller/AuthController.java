@@ -11,6 +11,7 @@
     import jakarta.servlet.http.HttpServletResponse;
     import jakarta.validation.Valid;
     import lombok.RequiredArgsConstructor;
+    import org.springframework.beans.factory.annotation.Value;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,9 @@
     public class AuthController {
 
         private final AuthService authService;
+
+        @Value("${COOKIE_SECURE:false}")
+        private boolean cookieSecure;
 
         @PostMapping("/register")
         public ResponseEntity<ApiResponse<UserResponseDTO>> register(@Valid @RequestBody UserRegistrationDTO userRegistrationDTO, HttpServletResponse response, HttpServletRequest request){
@@ -138,7 +142,7 @@
         private void setAuthCookie(HttpServletResponse response, String token){
             ResponseCookie cookie = ResponseCookie.from("accessToken", token)
                     .httpOnly(true)
-                    .secure(false)  // Set to true in production with HTTPS
+                    .secure(cookieSecure)  // Set to true in production with HTTPS
                     .path("/")
                     .maxAge(24 * 60 * 60)
                     .sameSite("Lax")  // This is the key fix!
@@ -150,7 +154,7 @@
         private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
             ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                     .httpOnly(true)
-                    .secure(false)  // Set to true in production with HTTPS
+                    .secure(cookieSecure)  // Set to true in production with HTTPS
                     .path("/")
                     .maxAge(7 * 24 * 60 * 60)  // 7 days
                     .sameSite("Lax")
@@ -162,7 +166,7 @@
             // Clear access token
             ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
                     .httpOnly(true)
-                    .secure(false)
+                    .secure(cookieSecure)
                     .path("/")
                     .maxAge(0)
                     .sameSite("Lax")
@@ -171,7 +175,7 @@
             // Clear refresh token
             ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
                     .httpOnly(true)
-                    .secure(false)
+                    .secure(cookieSecure)
                     .path("/")
                     .maxAge(0)
                     .sameSite("Lax")
