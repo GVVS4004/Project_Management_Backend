@@ -145,7 +145,7 @@
                     .secure(cookieSecure)  // Set to true in production with HTTPS
                     .path("/")
                     .maxAge(24 * 60 * 60)
-                    .sameSite("Lax")  // This is the key fix!
+                    .sameSite(cookieSecure ? "None" : "Lax")  // This is the key fix!
                     .build();
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -157,7 +157,7 @@
                     .secure(cookieSecure)  // Set to true in production with HTTPS
                     .path("/")
                     .maxAge(7 * 24 * 60 * 60)  // 7 days
-                    .sameSite("Lax")
+                    .sameSite(cookieSecure ? "None" : "Lax")
                     .build();
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -169,7 +169,7 @@
                     .secure(cookieSecure)
                     .path("/")
                     .maxAge(0)
-                    .sameSite("Lax")
+                    .sameSite(cookieSecure ? "None" : "Lax")
                     .build();
 
             // Clear refresh token
@@ -178,7 +178,7 @@
                     .secure(cookieSecure)
                     .path("/")
                     .maxAge(0)
-                    .sameSite("Lax")
+                    .sameSite(cookieSecure ? "None" : "Lax")
                     .build();
 
             response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
