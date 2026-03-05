@@ -4,7 +4,7 @@
 -- Create users table
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    user_name VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
@@ -18,7 +18,7 @@ CREATE TABLE users (
 
 -- Create indexes for better query performance
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_username ON users(user_name);
 CREATE INDEX idx_users_role ON users(role);
 
 -- Add constraints to ensure role values are valid
