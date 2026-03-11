@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/tasks")
@@ -74,8 +75,8 @@ public class TaskController {
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<ApiResponse<Page<TaskResponseDTO>>> getTasksByProject(@PathVariable Long projectId, Pageable pageable){
-        Page<TaskResponseDTO> result = taskService.getTasksByProject(projectId,pageable);
+    public ResponseEntity<ApiResponse<Page<TaskResponseDTO>>> getTasksByProject(@PathVariable Long projectId, @RequestParam Optional<List<TaskType>> types, Pageable pageable){
+        Page<TaskResponseDTO> result = taskService.getTasksByProject(projectId, types, pageable);
         return ResponseEntity.ok(ApiResponse.success("Tasks fetched successfully",result));
     }
 

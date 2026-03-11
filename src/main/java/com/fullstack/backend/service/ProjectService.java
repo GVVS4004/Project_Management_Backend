@@ -12,6 +12,7 @@ import com.fullstack.backend.exception.ResourceNotFoundException;
 import com.fullstack.backend.repository.ProjectMemberRepository;
 import com.fullstack.backend.repository.ProjectRepository;
 import com.fullstack.backend.repository.UserRepository;
+import com.fullstack.backend.util.PaginationUtils;
 import com.fullstack.backend.util.SecurityUtils;
 import com.fullstack.backend.util.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -78,8 +79,33 @@ public class ProjectService implements IProjectService{
      */
     @Override
     @Transactional(readOnly = true)
-    public Page<ProjectResponseDTO> getAllProjects(Pageable pageable) {
-        return projectRepository.findAll(pageable).map(this::convertToDTO);
+    public Page<ProjectResponseDTO> getAllProjects(String search, ProjectStatus status, Long ownerId, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
+        boolean hasSearch = search != null && !search.isBlank();
+        boolean hasStatus = status != null;
+        boolean hasOwner = ownerId != null;
+
+        Page<Project> projects;
+
+        if (hasSearch && hasStatus && hasOwner) {
+            projects = projectRepository.findByNameContainingIgnoreCaseAndStatusAndOwnerId(search, status, ownerId, pageable);
+        } else if (hasSearch && hasStatus) {
+            projects = projectRepository.findByNameContainingIgnoreCaseAndStatus(search, status, pageable);
+        } else if (hasSearch && hasOwner) {
+            projects = projectRepository.findByNameContainingIgnoreCaseAndOwnerId(search, ownerId, pageable);
+        } else if (hasStatus && hasOwner) {
+            projects = projectRepository.findByStatusAndOwnerId(status, ownerId, pageable);
+        } else if (hasSearch) {
+            projects = projectRepository.findByNameContainingIgnoreCase(search, pageable);
+        } else if (hasStatus) {
+            projects = projectRepository.findByStatus(status, pageable);
+        } else if (hasOwner) {
+            projects = projectRepository.findByOwnerId(ownerId, pageable);
+        } else {
+            projects = projectRepository.findAll(pageable);
+        }
+
+        return projects.map(this::convertToDTO);
     }
 
     /**

@@ -17,7 +17,7 @@ public interface IProjectService {
     // Project management methods
     ProjectResponseDTO createProject(CreateProjectDTO createProjectDTO);
     ProjectResponseDTO getProjectById(Long id);
-    Page<ProjectResponseDTO> getAllProjects(Pageable pageable);
+    Page<ProjectResponseDTO> getAllProjects(String search, ProjectStatus status, Long ownerId,Pageable pageable);
     ProjectResponseDTO updateProject(Long id, UpdateProjectDTO dto);
     void deleteProject(Long id);
     ProjectResponseDTO updateProjectStatus(Long id, ProjectStatus status);

@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -153,4 +154,26 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // Find all unassigned tasks in a project
     @EntityGraph(value = TASK_GRAPH)
     List<Task> findByProjectIdAndAssignedToIdIsNull(Long projectId);
+
+    @EntityGraph(value = TASK_GRAPH)
+    Page<Task> findByProjectIdAndTypeIn(Long projectId, List<TaskType> types, Pageable pageable);
+
+
+    @Query("SELECT t.status, COUNT(t) FROM Task t WHERE t.assignedTo.id = :userId GROUP BY t.status")
+    List<Object[]> countByAssignedUserGroupedByStatus(@Param("userId") Long userId);
+
+    @Query("SELECT t.priority, COUNT(t) FROM Task t WHERE t.assignedTo.id = :userId GROUP BY t.priority")
+    List<Object[]> countByAssignedUserGroupedByPriority(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :userId AND t.dueDate < :date AND t.status NOT IN ('DONE', 'ABANDONED')")
+    long countOverdueByAssignedToId(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.project.id = :projectId AND t.dueDate < :date AND t.status NOT IN ('DONE', 'ABANDONED')")
+    long countOverdueByProjectId(@Param("projectId") Long projectId, @Param("date") LocalDate date);
+
+    @Query("SELECT CAST(t.completedAt AS LocalDate), COUNT(t) FROM Task t WHERE t.project.id IN :projectIds AND t.completedAt >= :since GROUP BY CAST(t.completedAt AS LocalDate)")
+    List<Object[]> countCompletedPerDay(@Param("projectIds") List<Long> projectIds, @Param("since") LocalDateTime since);
+
+    @Query("SELECT CAST(t.createdAt AS LocalDate), COUNT(t) FROM Task t WHERE t.project.id IN :projectIds AND t.createdAt >= :since GROUP BY CAST(t.createdAt AS LocalDate)")
+    List<Object[]> countCreatedPerDay(@Param("projectIds") List<Long> projectIds, @Param("since") LocalDateTime since);
 }

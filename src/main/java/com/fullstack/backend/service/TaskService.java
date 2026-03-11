@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TaskService {
 
@@ -26,7 +27,7 @@ public interface TaskService {
 
     // ========== QUERY OPERATIONS ==========
 
-    Page<TaskResponseDTO> getTasksByProject(Long projectId, Pageable pageable);
+    Page<TaskResponseDTO> getTasksByProject(Long projectId, Optional<List<TaskType>> taskTypes, Pageable pageable);
     Page<TaskResponseDTO> getTasksByAssignee(Long userId, Pageable pageable);
     Page<TaskResponseDTO> getTasksByCreator(Long userId, Pageable pageable);
     Page<TaskResponseDTO> getMyTasks(Pageable pageable);

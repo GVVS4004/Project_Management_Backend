@@ -7,6 +7,7 @@ import com.fullstack.backend.dto.request.UpdateProjectDTO;
 import com.fullstack.backend.dto.response.ApiResponse;
 import com.fullstack.backend.dto.response.MemberResponseDTO;
 import com.fullstack.backend.dto.response.ProjectResponseDTO;
+import com.fullstack.backend.entity.Project;
 import com.fullstack.backend.entity.ProjectStatus;
 import com.fullstack.backend.service.IProjectService;
 import jakarta.validation.Valid;
@@ -59,9 +60,10 @@ public class ProjectController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProjectResponseDTO>>> getAllProjects(
+            @RequestParam(required = false) String search, @RequestParam(required = false) ProjectStatus status, @RequestParam(required = false) Long ownerId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
-        Page<ProjectResponseDTO> projects = projectService.getAllProjects(pageable);
+        Page<ProjectResponseDTO> projects = projectService.getAllProjects(search, status, ownerId, pageable);
         return ResponseEntity.ok(
                 ApiResponse.success("Projects retrieved successfully", projects));
     }

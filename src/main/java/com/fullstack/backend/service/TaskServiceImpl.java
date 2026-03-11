@@ -11,6 +11,7 @@ import com.fullstack.backend.repository.ProjectMemberRepository;
 import com.fullstack.backend.repository.ProjectRepository;
 import com.fullstack.backend.repository.TaskRepository;
 import com.fullstack.backend.repository.UserRepository;
+import com.fullstack.backend.util.PaginationUtils;
 import com.fullstack.backend.util.SecurityUtils;
 import com.fullstack.backend.util.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -317,25 +319,35 @@ public class TaskServiceImpl  implements TaskService{
     }
 
     @Override
-    public Page<TaskResponseDTO> getTasksByProject(Long projectId, Pageable pageable) {
-        Page<Task> tasks = taskRepository.findByProjectId(projectId,pageable);
+    public Page<TaskResponseDTO> getTasksByProject(Long projectId, Optional<List<TaskType>> taskTypes,Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
+        Page<Task> tasks;
+        if(taskTypes.isEmpty()){
+            tasks = taskRepository.findByProjectId(projectId,pageable);
+        }
+        else{
+            tasks = taskRepository.findByProjectIdAndTypeIn(projectId, taskTypes.get(), pageable);
+        }
         return tasks.map(this::convertToDTO);
     }
 
     @Override
     public Page<TaskResponseDTO> getTasksByAssignee(Long userId, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByAssignedToId(userId,pageable);
         return tasks.map(this::convertToDTO);
     }
 
     @Override
     public Page<TaskResponseDTO> getTasksByCreator(Long userId, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByCreatedById(userId,pageable);
         return tasks.map(this::convertToDTO);
     }
 
     @Override
     public Page<TaskResponseDTO> getMyTasks(Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         User currentUser = SecurityUtils.getCurrentUser();
         Page<Task> tasks = taskRepository.findByAssignedToId(currentUser.getId(),pageable);
         return tasks.map(this::convertToDTO);
@@ -349,6 +361,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByStatus(TaskStatus status, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByStatus(status, pageable);
 
         return tasks.map(this::convertToDTO);
@@ -356,6 +369,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByPriority(TaskPriority priority, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByPriority(priority,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -363,6 +377,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByType(TaskType type, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByType(type,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -370,6 +385,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByProjectAndStatus(Long projectId, TaskStatus status, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByProjectIdAndStatus(projectId,status,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -377,6 +393,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByProjectAndPriority(Long projectId, TaskPriority priority, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByProjectIdAndPriority(projectId,priority,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -384,6 +401,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> getTasksByAssigneeAndStatus(Long userId, TaskStatus status, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByAssignedToIdAndStatus(userId,status,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -391,6 +409,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> searchTasksByTitle(String title, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.findByTitleContainingIgnoreCase(title,pageable);
 
         return tasks.map(this::convertToDTO);
@@ -398,6 +417,7 @@ public class TaskServiceImpl  implements TaskService{
 
     @Override
     public Page<TaskResponseDTO> searchTasks(String searchTerm, Pageable pageable) {
+        pageable = PaginationUtils.ensureStableSort(pageable);
         Page<Task> tasks = taskRepository.searchByTitleOrDescription(searchTerm,pageable);
 
         return tasks.map(this::convertToDTO);
